@@ -19,35 +19,35 @@ def trigger_next_nodes(run_id, node_id):
         next_nodes = edges.get(node_id, [])
 
         if len(next_nodes) == 0:
-            log_to_workflow(workflow_id, f"No next nodes for node {node_id}")
+            log_to_run(run_id, f"No next nodes for node {node_id}")
             # todo this isn't right, it could just be a terminal node, but other paths are still active.
-            workflow_ref.update({'status': 'completed'})
+            run_ref.update({'status': 'completed'})
         else:
             for next_node_id in next_nodes:
-                log_to_workflow(workflow_id, f"Triggering node {next_node_id}")
+                log_to_run(run_id, f"Triggering node {next_node_id}")
                 # Update input for next node
-                update_next_node_input(workflow_id, next_node_id, node_id)
+                update_next_node_input(run_id, next_node_id, node_id)
                 # Trigger the next node's Cloud Function
-                next_node_ref = db.collection('workflows').document(workflow_id).collection('nodes').document(next_node_id)
+                next_node_ref = db.collection('runs').document(run_id).collection('nodes').document(next_node_id)
                 next_node_ref.update({
                     'status': 'Preparing to Run'
                 })
 
 
-@firestore_fn.on_document_updated(document= 'workflows/{workflow_id}/nodes/{node_id}')
+@firestore_fn.on_document_updated(document= 'runs/{run_id}/nodes/{node_id}')
 def node_status_changed(event):
-    log_to_workflow(event.params['workflow_id'], f"Node {event.params['node_id']} status changed.")
+    log_to_run(event.params['run_id'], f"Node {event.params['node_id']} status changed.")
     # Get the updated document
     node_data = event.data.after.to_dict()
 
     # Check if the status is 'Preparing to Run'
     if node_data.get('status') == 'Preparing to Run':
-        workflow_id = event.params['workflow_id']
+        run_id = event.params['run_id']
         node_id = event.params['node_id']
-        execute_node_function(workflow_id, node_id, node_data)
+        execute_node_function(run_id, node_id, node_data)
 
-def execute_node_function(workflow_id, node_id, node_data):
-    log_to_workflow(workflow_id, f"Executing node function for node {node_id}")
+def execute_node_function(run_id, node_id, node_data):
+    log_to_run(run_id, f"Executing node function for node {node_id}")
     # Update node status to 'Running'
     update_node_status(workflow_id, node_id, 'running')
 
@@ -90,7 +90,7 @@ def start_node(request):
     input_data = get_node_input(workflow_id, node_id)
     log_to_workflow(workflow_id, f"start_node: Got Input Data...")
     # Start node logic
-    output_data = {'message': 'Workflow started'}
+    output_data = {'message': 'Run started'}
     store_node_output(workflow_id, node_id, output_data)
     update_node_status(workflow_id, node_id, 'completed')
 
@@ -134,7 +134,7 @@ def end_node(request):
     input_data = get_node_input(workflow_id, node_id)
 
     # End node logic
-    print('Workflow completed:', input_data)
+    print('Run completed:', input_data)
     update_node_status(workflow_id, node_id, 'completed')
 
     return {'status': 'end_node_executed'}

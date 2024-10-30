@@ -34,20 +34,20 @@ def create_run(request):
             'output': {},
         })
 
-    log_to_run(run_id, 'Workflow Created')
-    start_workflow(workflow_id)
-    return {'workflow_id': workflow_id}
+    log_to_run(run_id, 'Run Created')
+    start_run(run_id)
+    return {'run_id': run_id}
 
-def start_workflow(workflow_id):
-    logger.log(f"Starting workflow: {workflow_id}")
-    log_to_workflow(workflow_id, 'Workflow Started')
+def start_run(run_id):
+    logger.log(f"Starting run: {run_id}")
+    log_to_run(run_id, 'Run Started')
     # Set initial input for start node
     start_input = {'counter': 0}
-    node_ref = db.collection('workflows').document(workflow_id).collection('nodes').document('start_node')
+    node_ref = db.collection('runs').document(run_id).collection('nodes').document('start_node')
     node_ref.update({'input': start_input})
 
     # Trigger start node
-    update_node_status(workflow_id, 'start_node', 'Preparing to Run')
+    update_node_status(run_id, 'start_node', 'Preparing to Run')
 
 
 
