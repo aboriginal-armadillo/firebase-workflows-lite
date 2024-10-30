@@ -6,16 +6,16 @@ from .io import store_node_output, \
     update_node_status, \
     get_node_input
 
-from ..utils import log_to_workflow, db
+from ..utils import log_to_run, db
 
-def trigger_next_nodes(workflow_id, node_id):
-    log_to_workflow(workflow_id, f"Triggering next nodes for node {node_id}")
-    # Fetch workflow edges from Firestore
-    workflow_ref = db.collection('workflows').document(workflow_id)
-    workflow_doc = workflow_ref.get()
-    if workflow_doc.exists:
-        workflow_data = workflow_doc.to_dict()
-        edges = workflow_data.get('edges', {})
+def trigger_next_nodes(run_id, node_id):
+    log_to_run(run_id, f"Triggering next nodes for node {node_id}")
+    # Fetch run edges from Firestore
+    run_ref = db.collection('runs').document(run_id)
+    run_doc = run_ref.get()
+    if run_doc.exists:
+        run_data = run_doc.to_dict()
+        edges = run_data.get('edges', {})
         next_nodes = edges.get(node_id, [])
 
         if len(next_nodes) == 0:

@@ -8,7 +8,7 @@ from firebase_admin import initialize_app, firestore, functions
 initialize_app()
 db = firestore.client()
 
-from workflows.nodes import  trigger_next_nodes, \
+from runs.nodes import  trigger_next_nodes, \
     update_node_status, \
     get_node_input, \
     store_node_output, \
@@ -16,5 +16,5 @@ from workflows.nodes import  trigger_next_nodes, \
 
 
 
-from workflows import create_workflow
+from runs import create_run
 
