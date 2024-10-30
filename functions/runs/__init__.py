@@ -41,7 +41,8 @@ def create_run(request):
     run_ref = workflow_ref.collection('runs').document(run_id)
     run_ref.set({
         'edges': edges,
-        'status': 'running'
+        'status': 'running',
+        'graph': graph
     })
 
     # Initialize nodes in Firestore

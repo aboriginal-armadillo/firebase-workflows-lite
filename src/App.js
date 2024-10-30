@@ -5,6 +5,7 @@ import WorkflowsList from './components/WorkflowsList/WorkflowsList';
 import WorkflowBuilder from './components/WorkflowBuilder/WorkflowBuilder';
 import RunsList from './components/RunsList/RunsList';
 import RunViewer from './components/RunViewer/RunViewer';
+import WorkflowRuns from "./components/WorkflowRuns/WorkflowRuns";
 
 function App() {
   return (
@@ -12,11 +13,12 @@ function App() {
       <Routes>
         <Route path="/" element={<WorkflowsList />} />
         <Route path="/workflow/:workflowId" element={<WorkflowBuilder />} />
+        <Route path="/workflow/:workflowId/runs" element={<WorkflowRuns />} />
         <Route path="/runs" element={<RunsList />} />
-        <Route path="/runs/:runId" element={<RunViewer />} />
+        <Route path="/workflow/:workflowId/runs/:runId" element={<RunViewer />} />
       </Routes>
     </Router>
   );
 }
 
-export default App;  
+export default App;

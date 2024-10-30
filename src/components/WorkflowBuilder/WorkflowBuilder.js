@@ -1,4 +1,3 @@
-// src/components/WorkflowBuilder/WorkflowBuilder.js
 import React, { useState, useCallback, useEffect } from 'react';
 import ReactFlow, {
   addEdge,
@@ -95,7 +94,7 @@ const WorkflowBuilder = () => {
       console.log('Cloud Function result:', result.data);
 
       alert('Workflow saved and run started!');
-      navigate('/runs');
+      navigate(`/workflow/${workflowId}/runs`);
     } catch (error) {
       console.error('Error calling cloud function:', error);
       alert('Error starting run.');
