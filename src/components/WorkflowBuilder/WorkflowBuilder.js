@@ -1,5 +1,5 @@
-// src/WorkflowBuilder.js
-import React, { useState, useCallback } from 'react';
+// src/components/WorkflowBuilder/WorkflowBuilder.js
+import React, { useState, useCallback, useEffect } from 'react';
 import ReactFlow, {
   addEdge,
   applyNodeChanges,
@@ -9,19 +9,35 @@ import ReactFlow, {
   ReactFlowProvider,
 } from 'reactflow';
 import 'reactflow/dist/style.css';
-import { getFirestore, doc, setDoc, collection, addDoc } from 'firebase/firestore';
+import { getFirestore, doc, setDoc, onSnapshot } from 'firebase/firestore';
 import app from '../../firebase';
 import { Button } from 'react-bootstrap';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { v4 as uuidv4 } from 'uuid';
 
 const WorkflowBuilder = () => {
+  const { workflowId } = useParams();
   const [nodes, setNodes] = useState([]);
   const [edges, setEdges] = useState([]);
   const navigate = useNavigate();
 
-  const db = getFirestore(app);
+  useEffect(() => {
+    const db = getFirestore(app);
+    const workflowRef = doc(db, 'workflows', workflowId);
+
+    // Fetch the graph
+    const unsubscribe = onSnapshot(workflowRef, (docSnap) => {
+      const data = docSnap.data();
+      const graph = data?.graph;
+      if (graph) {
+        setNodes(graph.nodes || []);
+        setEdges(graph.edges || []);
+      }
+    });
+
+    return () => unsubscribe();
+  }, [workflowId]);
 
   const onAddNode = useCallback(() => {
     setNodes((nds) =>
@@ -48,30 +64,38 @@ const WorkflowBuilder = () => {
     []
   );
 
+  // Save the graph whenever nodes or edges change
+  useEffect(() => {
+    const db = getFirestore(app);
+    const workflowRef = doc(db, 'workflows', workflowId);
+    const graphData = { nodes, edges };
+    setDoc(workflowRef, { graph: graphData }, { merge: true });
+  }, [nodes, edges, workflowId]);
+
   const onRun = async () => {
     try {
       const db = getFirestore(app);
-    const functions = getFunctions(app);
-    const createWorkflow = httpsCallable(functions, 'create_workflow');
+      const functions = getFunctions(app);
+      const createRunFunction = httpsCallable(functions, 'create_run');
 
-    // Save the workflow definition
-    const graphData = { nodes, edges };
-    const workflowRef = doc(db, 'workflows', 'test_workflow');
-    await setDoc(workflowRef, { graph: graphData }, { merge: true });
+      // Save the updated workflow definition
+      const graphData = { nodes, edges };
+      const workflowRef = doc(db, 'workflows', workflowId);
+      await setDoc(workflowRef, { graph: graphData }, { merge: true });
 
-    // Generate run_id
-    const run_id = uuidv4();
+      // Generate run_id
+      const run_id = uuidv4();
 
-    // Create run document
-    const runRef = doc(workflowRef, 'runs', run_id);
-    await setDoc(runRef, { startedAt: new Date(), status: 'pending' });
+      // Create run document
+      const runRef = doc(workflowRef, 'runs', run_id);
+      await setDoc(runRef, { startedAt: new Date(), status: 'pending' });
 
-    // Call the cloud function with workflow_id and run_id
-    const result = await createWorkflow({ workflow_id: 'test_workflow', run_id });
-    console.log('Cloud Function result:', result.data);
+      // Call the cloud function with workflow_id and run_id
+      const result = await createRunFunction({ workflow_id: workflowId, run_id });
+      console.log('Cloud Function result:', result.data);
 
-    alert('Workflow saved and run started!');
-    navigate('/runs');
+      alert('Workflow saved and run started!');
+      navigate('/runs');
     } catch (error) {
       console.error('Error calling cloud function:', error);
       alert('Error starting run.');

@@ -27,7 +27,8 @@ def update_next_node_input(run_id, next_node_id, prev_node_id):
     next_node_ref.update({'input': prev_output})
 
 
-def update_node_status(run_id, node_id, status):
-    log_to_run(run_id, f"Updating status for node {node_id} to {status}")
-    doc_ref = db.collection('runs').document(run_id).collection('nodes').document(node_id)
+# functions/runs/nodes/io.py
+def update_node_status(workflow_id, run_id, node_id, status):
+    log_to_run(workflow_id, run_id, f"Updating status for node {node_id} to {status}")
+    doc_ref = db.collection('workflows').document(workflow_id).collection('runs').document(run_id).collection('nodes').document(node_id)
     doc_ref.update({'status': status})

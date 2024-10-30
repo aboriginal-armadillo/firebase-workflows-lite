@@ -34,37 +34,39 @@ def trigger_next_nodes(run_id, node_id):
                 })
 
 
-@firestore_fn.on_document_updated(document= 'runs/{run_id}/nodes/{node_id}')
+@firestore_fn.on_document_updated(document='workflows/{workflow_id}/runs/{run_id}/nodes/{node_id}')
 def node_status_changed(event):
-    log_to_run(event.params['run_id'], f"Node {event.params['node_id']} status changed.")
+    log_to_run(event.params['workflow_id'], event.params['run_id'], f"Node {event.params['node_id']} status changed.")
     # Get the updated document
     node_data = event.data.after.to_dict()
 
     # Check if the status is 'Preparing to Run'
     if node_data.get('status') == 'Preparing to Run':
+        workflow_id = event.params['workflow_id']
         run_id = event.params['run_id']
         node_id = event.params['node_id']
-        execute_node_function(run_id, node_id, node_data)
+        execute_node_function(workflow_id, run_id, node_id, node_data)
 
-def execute_node_function(run_id, node_id, node_data):
-    log_to_run(run_id, f"Executing node function for node {node_id}")
+def execute_node_function(workflow_id, run_id, node_id, node_data):
+    log_to_run(workflow_id, run_id, f"Executing node function for node {node_id}")
     # Update node status to 'Running'
     update_node_status(workflow_id, node_id, 'running')
 
     try:
         # Extract the function name and input data
         # function_name = node_data.get('fn')
-        function_name = node_id
+        function_name = dummy_fn
         input_data = node_data.get('input', {})
 
         # Call the function by name
         if function_name in globals():
             input_data['workflow_id'] = workflow_id
+            input_data['run_id'] = run_id
             input_data['node_id'] = node_id
-            log_to_workflow(workflow_id, f"Executing function: {function_name} with input data {input_data}")
+            log_to_run(workflow_id, run_id, f"Executing function: {function_name} with input data {input_data}")
             output_data = globals()[function_name](input_data)
             # Store the output and update status to 'Completed'
-            log_to_workflow(workflow_id, f"Function {function_name} executed successfully.")
+            log_to_run(workflow_id, run_id, f"Function {function_name} executed successfully.")
             store_node_output(workflow_id, node_id, output_data)
             update_node_status(workflow_id, node_id, 'completed')
             # Trigger subsequent nodes
@@ -77,18 +79,15 @@ def execute_node_function(run_id, node_id, node_data):
         print(f"Node {node_id} failed with error: {e}")
 
 
-def start_node(request):
-    data = request
-    workflow_id = data.get('workflow_id')
+def dummy_fn(input_data):
+    workflow_id = input_data.get('workflow_id')
+    run_id = input_data.get('run_id')
+    node_id = input_data.get('node_id')
     logger.log(f"Executing Start Node for workflow: {workflow_id}")
-    log_to_workflow(workflow_id, "Executing Start Node")
-    node_id = 'start_node'
+    log_to_run(workflow_id, run_id, f"Executing Start Node {node_id}")
 
     update_node_status(workflow_id, node_id, 'running')
 
-    # Fetch start node input (if any)
-    input_data = get_node_input(workflow_id, node_id)
-    log_to_workflow(workflow_id, f"start_node: Got Input Data...")
     # Start node logic
     output_data = {'message': 'Run started'}
     store_node_output(workflow_id, node_id, output_data)
@@ -97,44 +96,4 @@ def start_node(request):
     # Trigger next node
     trigger_next_nodes(workflow_id, node_id)
 
-    return {'status': 'start_node_executed'}
-
-def process_node(request):
-    data = request
-    workflow_id = data.get('workflow_id')
-    log_to_workflow(workflow_id, "Executing Process Node")
-    node_id = 'process_node'
-
-    update_node_status(workflow_id, node_id, 'running')
-
-    # Fetch input
-    input_data = get_node_input(workflow_id, node_id)
-
-    # Process node logic (e.g., increment a counter)
-    counter = input_data.get('counter', 0)
-    output_data = {'counter': counter + 1}
-    store_node_output(workflow_id, node_id, output_data)
-    update_node_status(workflow_id, node_id, 'completed')
-
-    # Trigger next node
-    trigger_next_nodes(workflow_id, node_id)
-
-    return {'status': 'process_node_executed'}
-
-
-def end_node(request):
-    data = request
-    workflow_id = data.get('workflow_id')
-    log_to_workflow(workflow_id, "Executing End Node")
-    node_id = 'end_node'
-
-    update_node_status(workflow_id, node_id, 'running')
-
-    # Fetch input
-    input_data = get_node_input(workflow_id, node_id)
-
-    # End node logic
-    print('Run completed:', input_data)
-    update_node_status(workflow_id, node_id, 'completed')
-
-    return {'status': 'end_node_executed'}
+    return {'status': 'dummy_node_executed'}
