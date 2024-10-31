@@ -14,12 +14,32 @@ import { Button } from 'react-bootstrap';
 import { useNavigate, useParams } from 'react-router-dom';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { v4 as uuidv4 } from 'uuid';
+import WorkflowBuilderModal from "../WorkflowBuilderModal/WorkflowBuilderModal";
 
 const WorkflowBuilder = () => {
   const { workflowId } = useParams();
   const [nodes, setNodes] = useState([]);
   const [edges, setEdges] = useState([]);
   const navigate = useNavigate();
+  const [modalNode, setModalNode] = useState(null);
+
+  const handleNodeClick = (event, node) => {
+    setModalNode(node);
+  };
+
+  const handleSaveNode = (updatedNode) => {
+    const db = getFirestore(app);
+    const workflowRef = doc(db, 'workflows', workflowId);
+    const graphData = { nodes, edges };
+    graphData.nodes = graphData.nodes.map((node) => {
+      if (node.id === updatedNode.id) {
+        return updatedNode;
+      }
+      return node;
+    });
+    setDoc(workflowRef, { graph: graphData }, { merge: true });
+    setNodes(graphData.nodes);
+  };
 
   useEffect(() => {
     const db = getFirestore(app);
@@ -42,6 +62,7 @@ const WorkflowBuilder = () => {
     setNodes((nds) =>
       nds.concat({
         id: `node-${nds.length}`,
+        nodeName: `Node ${nds.length}`,
         data: { label: `Node ${nds.length}` },
         position: { x: Math.random() * 250, y: Math.random() * 250 },
       })
@@ -120,12 +141,19 @@ const WorkflowBuilder = () => {
             onNodesChange={onNodesChange}
             onEdgesChange={onEdgesChange}
             onConnect={onConnect}
+            onNodeClick={handleNodeClick}
             fitView
           >
             <Background />
             <Controls />
+
           </ReactFlow>
         </ReactFlowProvider>
+        {modalNode && (
+              <WorkflowBuilderModal node={modalNode}
+                                    onHide={() => setModalNode(null)}
+              onSave={handleSaveNode}/>
+            )}
       </div>
     </div>
   );

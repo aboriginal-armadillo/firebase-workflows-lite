@@ -4,6 +4,7 @@ import 'reactflow/dist/style.css';
 import { useParams } from 'react-router-dom';
 import { getFirestore, doc, getDoc, onSnapshot, collection } from 'firebase/firestore';
 import app from '../../firebase';
+import RunViewerModal from "../RunViewerModal/RunViewerModal";
 
 const RunViewer = () => {
   const { runId } = useParams();
@@ -11,17 +12,20 @@ const RunViewer = () => {
   const [nodes, setNodes] = useState([]);
   const [edges, setEdges] = useState([]);
   const [nodeStatuses, setNodeStatuses] = useState({});
+  const [modalNode, setModalNode] = useState(null);
+
+  const handleNodeClick = (event, node) => {
+    setModalNode(node);
+  };
 
   useEffect(() => {
     const db = getFirestore(app);
     const workflowRef = doc(db, 'workflows', workflowId);
     const runRef = doc(workflowRef, 'runs', runId);
-    console.log('workflowId', workflowId);
-    console.log('runId', runId);
-    // Fetch the graph
+
+    // Initial data fetch for structure
     getDoc(workflowRef).then((docSnap) => {
       const data = docSnap.data();
-      console.log('data', data);
       const graph = data.graph;
       if (graph) {
         setNodes(graph.nodes);
@@ -29,20 +33,39 @@ const RunViewer = () => {
       }
     });
 
-    // Subscribe to node statuses under the run document
+    // Subscribe to real-time updates in node statuses
     const nodesCollection = collection(runRef, 'nodes');
     const unsubscribe = onSnapshot(nodesCollection, (snapshot) => {
       const statuses = {};
+      const nodeData = {};
+
       snapshot.forEach((doc) => {
+        nodeData[doc.id] = {
+          input: doc.data().input || {},
+          output: doc.data().output || {}
+        };
         statuses[doc.id] = doc.data().status;
       });
-      setNodeStatuses(statuses);
-    });
 
+      setNodeStatuses(statuses);
+
+      // Merge node data with existing nodes
+      setNodes((prevNodes) =>
+        prevNodes.map((node) => ({
+          ...node,
+          data: {
+            ...node.data,
+            ...nodeData[node.id], // Merge input/output data
+          },
+        }))
+      );
+    });
+    console.log('nodes: ', nodes);
     return () => unsubscribe();
+     // eslint-disable-next-line
   }, [runId, workflowId]);
 
-  const updatedNodes = nodes.map((node) => {
+  const styledNodes = nodes.map((node) => {
     const status = nodeStatuses[node.id] || 'unknown';
     let backgroundColor = '#fff';
     switch (status) {
@@ -62,12 +85,12 @@ const RunViewer = () => {
         backgroundColor = '#fff';
     }
     return {
-     ...node,
+      ...node,
       data: {
-       ...node.data,
+        ...node.data,
         label: `${node.data.label} (${status})`,
       },
-      style: {...node.style, backgroundColor },
+      style: { ...node.style, backgroundColor },
     };
   });
 
@@ -75,8 +98,12 @@ const RunViewer = () => {
     <div className="container">
       <h1>Run {runId}</h1>
       <div style={{ height: '80vh', border: '1px solid #ddd' }}>
+        {modalNode && (
+        <RunViewerModal node={modalNode} onHide={() => setModalNode(null)} />
+      )}
         <ReactFlow
-          nodes={updatedNodes}
+          nodes={styledNodes}
+          onNodeClick={handleNodeClick}
           edges={edges}
           nodesDraggable={false}
           elementsSelectable={false}
