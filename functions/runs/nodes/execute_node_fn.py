@@ -40,7 +40,7 @@ def execute_node_fn(workflow_id, run_id, node_id, node_data):
 
         # Create a restricted environment
         env = {
-            '__builtins__': safe_builtins,
+            '__builtins__': __builtins__,
             '_getattr_': getattr,
             '_getitem_': default_guarded_getitem,
             '_iter_': default_guarded_getiter,
@@ -48,6 +48,7 @@ def execute_node_fn(workflow_id, run_id, node_id, node_data):
             '_write_': full_write_guard,
             '_getiter_': default_guarded_getiter,
             "_iter_unpack_sequence_": guarded_iter_unpack_sequence,
+
         }
 
         # Execute the compiled code
@@ -63,7 +64,7 @@ def execute_node_fn(workflow_id, run_id, node_id, node_data):
             std_out = ""
 
         # Store the output and update status to 'Completed'
-        store_node_output(workflow_id, run_id, node_id, output_data)
+        store_node_output(workflow_id, run_id, node_id, output_data, std_out)
         update_node_status(workflow_id, run_id, node_id, 'completed')
 
 

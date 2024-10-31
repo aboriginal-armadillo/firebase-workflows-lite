@@ -13,7 +13,7 @@ const RunViewer = () => {
   const [edges, setEdges] = useState([]);
   const [nodeStatuses, setNodeStatuses] = useState({});
   const [modalNode, setModalNode] = useState(null);
-
+  const [runLogs, setRunLogs] = useState([]);
   const handleNodeClick = (event, node) => {
     setModalNode(node);
   };
@@ -33,9 +33,17 @@ const RunViewer = () => {
       }
     });
 
+     // Subscribe to run document for logs
+    const unsubscribeRun = onSnapshot(runRef, (docSnap) => {
+      const runData = docSnap.data();
+      if (runData && runData.logs) {
+        setRunLogs(runData.logs);
+      }
+    });
+
     // Subscribe to real-time updates in node statuses
     const nodesCollection = collection(runRef, 'nodes');
-    const unsubscribe = onSnapshot(nodesCollection, (snapshot) => {
+    const unsubscribeNodes = onSnapshot(nodesCollection, (snapshot) => {
       const statuses = {};
       const nodeData = {};
 
@@ -61,7 +69,10 @@ const RunViewer = () => {
       );
     });
     console.log('nodes: ', nodes);
-    return () => unsubscribe();
+    return () => {
+      unsubscribeRun();
+        unsubscribeNodes();
+    }
      // eslint-disable-next-line
   }, [runId, workflowId]);
 
@@ -113,6 +124,16 @@ const RunViewer = () => {
           <Controls />
         </ReactFlow>
       </div>
+      {runLogs && runLogs.length > 0 && (
+        <div style={{ marginTop: '20px' }}>
+          <h3>Run Logs:</h3>
+          <div style={{ maxHeight: '300px', overflowY: 'auto', border: '1px solid #ddd', padding: '10px' }}>
+            <pre style={{ fontFamily: 'Courier, monospace' }}>
+              {runLogs.join('\n')}
+            </pre>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

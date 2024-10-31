@@ -5,6 +5,7 @@ const RunViewerModal = ({ node, onHide }) => {
 
   const input = node.data.input;
   const output = node.data.output;
+  const stdOut = node.data.std_out;
 
   return (
     <Modal show={true} onHide={onHide}>
@@ -33,6 +34,14 @@ const RunViewerModal = ({ node, onHide }) => {
                   <strong>{key}:</strong> {output[key]}
                 </div>
               ))}
+            </div>
+          </div>
+        )}
+       {stdOut && (
+          <div>
+            <h5>Standard Output:</h5>
+            <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
+              <pre style={{ fontFamily: 'Courier, monospace' }}>{stdOut}</pre>
             </div>
           </div>
         )}

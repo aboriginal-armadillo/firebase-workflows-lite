@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, {useState, useCallback, useEffect, useRef} from 'react';
 import ReactFlow, {
   addEdge,
   applyNodeChanges,
@@ -22,6 +22,36 @@ const WorkflowBuilder = () => {
   const [edges, setEdges] = useState([]);
   const navigate = useNavigate();
   const [modalNode, setModalNode] = useState(null);
+
+  const dataLoadedRef = useRef(false);
+
+  useEffect(() => {
+    const db = getFirestore(app);
+    const workflowRef = doc(db, 'workflows', workflowId);
+
+    // Fetch the graph
+    const unsubscribe = onSnapshot(workflowRef, (docSnap) => {
+      const data = docSnap.data();
+      const graph = data?.graph;
+      if (graph) {
+        setNodes(graph.nodes || []);
+        setEdges(graph.edges || []);
+        dataLoadedRef.current = true; // <-- set dataLoaded to true after data loads
+      }
+    });
+
+    return () => unsubscribe();
+  }, [workflowId]);
+
+  // Save the graph whenever nodes or edges change
+  useEffect(() => {
+    if (!dataLoadedRef.current) return; // <-- only save if data has been loaded
+
+    const db = getFirestore(app);
+    const workflowRef = doc(db, 'workflows', workflowId);
+    const graphData = { nodes, edges };
+    setDoc(workflowRef, { graph: graphData }, { merge: true });
+  }, [nodes, edges, workflowId]);
 
   const handleNodeClick = (event, node) => {
     setModalNode(node);

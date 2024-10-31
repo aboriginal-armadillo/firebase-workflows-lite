@@ -1,10 +1,10 @@
 from ..utils import log_to_run, db
 
 
-def store_node_output(workflow_id, run_id, node_id, output_data):
+def store_node_output(workflow_id, run_id, node_id, output_data, std_out=''):
     log_to_run(workflow_id, run_id, f"Storing output for node {node_id}")
     doc_ref = db.collection('workflows').document(workflow_id).collection('runs').document(run_id).collection('nodes').document(node_id)
-    doc_ref.update({'output': output_data})
+    doc_ref.update({'output': output_data, 'std_out': std_out})
 
 def get_node_input(workflow_id, run_id, node_id):
     log_to_run(workflow_id, run_id, f"Getting input for node {node_id}")
