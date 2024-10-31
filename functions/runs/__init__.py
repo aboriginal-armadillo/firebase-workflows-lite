@@ -9,6 +9,7 @@ from .utils import log_to_run
 db = firestore.client()
 
 
+# functions/runs/__init__.py
 @https_fn.on_call()
 def create_run(request):
     data = request.data
@@ -24,7 +25,7 @@ def create_run(request):
 
     workflow_data = workflow_doc.to_dict()
     graph = workflow_data.get('graph', {})
-    nodes = [node['id'] for node in graph.get('nodes', [])]
+    nodes = graph.get('nodes', [])
     edges_list = graph.get('edges', [])
 
     # Convert edges from list to dict
@@ -45,19 +46,21 @@ def create_run(request):
         'graph': graph
     })
 
-    # Initialize nodes in Firestore
-    for node_id in nodes:
+    # Initialize nodes in Firestore with their respective code
+    for node in nodes:
+        node_id = node['id']
+        node_code = node['data'].get('code', '')  # Fetch the code from the node data
         node_ref = run_ref.collection('nodes').document(node_id)
         node_ref.set({
             'status': 'pending',
             'input': {},
             'output': {},
+            'code': node_code  # Store the code in the node document
         })
 
     log_to_run(workflow_id, run_id, 'Run Created')
     start_run(workflow_id, run_id)
     return {'run_id': run_id}
-
 def start_run(workflow_id, run_id):
     logger.log(f"Starting run: {run_id} for workflow {workflow_id}")
     log_to_run(workflow_id, run_id, f'Run {run_id} Started')

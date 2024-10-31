@@ -1,1 +1,2 @@
 firebase_functions~=0.2.0
+RestrictedPython~=7.4
