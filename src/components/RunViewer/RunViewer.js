@@ -2,7 +2,14 @@ import React, { useState, useEffect } from 'react';
 import ReactFlow, { Background, Controls } from 'reactflow';
 import 'reactflow/dist/style.css';
 import { useParams } from 'react-router-dom';
-import { getFirestore, doc, getDoc, onSnapshot, collection } from 'firebase/firestore';
+import {
+  getFirestore,
+  doc,
+  getDoc,
+  onSnapshot,
+  collection,
+  setDoc
+} from 'firebase/firestore';
 import app from '../../firebase';
 import RunViewerModal from "../RunViewerModal/RunViewerModal";
 
@@ -14,8 +21,38 @@ const RunViewer = () => {
   const [nodeStatuses, setNodeStatuses] = useState({});
   const [modalNode, setModalNode] = useState(null);
   const [runLogs, setRunLogs] = useState([]);
+  const [runName, setRunName] = useState('');
+  const [isEditingRunName, setIsEditingRunName] = useState(false);
   const handleNodeClick = (event, node) => {
     setModalNode(node);
+  };
+
+  useEffect(() => {
+    const db = getFirestore(app);
+    const runRef = doc(db, 'workflows', workflowId, 'runs', runId);
+
+    // Fetch run data including name
+    getDoc(runRef).then((docSnap) => {
+      if (docSnap.exists) {
+        const data = docSnap.data();
+        setRunName(data.runName || `Run ${runId}`);
+      }
+    });
+  }, [runId, workflowId]);
+
+    const handleRunNameChange = (event) => {
+    setRunName(event.target.value);
+  };
+
+  const handleRunNameClick = () => {
+    setIsEditingRunName(true);
+  };
+
+  const handleRunNameBlur = () => {
+    setIsEditingRunName(false);
+    const db = getFirestore(app);
+    const runRef = doc(db, 'workflows', workflowId, 'runs', runId);
+    setDoc(runRef, { runName }, { merge: true });
   };
 
   useEffect(() => {
@@ -108,7 +145,19 @@ const RunViewer = () => {
 
   return (
     <div className="container">
-      <h1>Run {runId}</h1>
+      <div>
+       {isEditingRunName ? (
+         <input
+            type="text"
+            value={runName}
+            onChange={handleRunNameChange}
+            onBlur={handleRunNameBlur}
+            autoFocus
+          />
+       ) : (
+         <h1 onClick={handleRunNameClick}>{runName}</h1>
+       )}
+      </div>
       <div style={{ height: '80vh', border: '1px solid #ddd' }}>
         {modalNode && (
         <RunViewerModal node={modalNode} onHide={() => setModalNode(null)} />

@@ -42,7 +42,7 @@ const RunsList = ({ workflowId }) => {
       <ul>
         {runs.map((run) => (
           <li key={run.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <Link to={`/workflow/${workflowId}/runs/${run.id}`}>Run {run.id}</Link>
+            <Link to={`/workflow/${workflowId}/runs/${run.id}`}>{run.runName || `Run ${run.id}`}</Link>
             <Button onClick={() => deleteRun(run.id)} style={{ background: 'none', border: 'none', cursor: 'pointer' }}>
               <FontAwesomeIcon icon={faTrash} style={{ color: 'red' }} />
             </Button>
