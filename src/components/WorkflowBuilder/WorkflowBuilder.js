@@ -153,6 +153,7 @@ const WorkflowBuilder = () => {
             node={modalNode}
             onHide={() => setModalNode(null)}
             onSave={handleSaveNode}
+
           />
         )}
       </div>

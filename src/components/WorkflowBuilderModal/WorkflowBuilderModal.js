@@ -18,9 +18,6 @@ const WorkflowBuilderModal = ({ node, onHide, onSave }) => {
     'Greet User': template2
   };
 
-  console.log('blue sky', bluesky);
-  console.log('template2', template2);
-
   const handleNodeNameChange = (e) => {
     setNodeName(e.target.value);
   };
@@ -47,7 +44,7 @@ const WorkflowBuilderModal = ({ node, onHide, onSave }) => {
   };
 
   return (
-    <Modal show={true} onHide={onHide}>
+    <Modal show={true} onHide={onHide} size={"xl"}>
       <Modal.Header closeButton>
         <Modal.Title>
           {nodeName}{' '}
