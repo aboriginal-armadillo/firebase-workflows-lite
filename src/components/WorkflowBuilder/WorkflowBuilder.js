@@ -1,4 +1,4 @@
-import React, {useState, useCallback, useEffect, useRef} from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import ReactFlow, {
   addEdge,
   applyNodeChanges,
@@ -36,16 +36,16 @@ const WorkflowBuilder = () => {
       if (graph) {
         setNodes(graph.nodes || []);
         setEdges(graph.edges || []);
-        dataLoadedRef.current = true; // <-- set dataLoaded to true after data loads
+        dataLoadedRef.current = true; // Set dataLoaded to true after data loads
       }
     });
 
     return () => unsubscribe();
   }, [workflowId]);
 
-  // Save the graph whenever nodes or edges change
+  // Save the graph whenever nodes or edges change, and ensure the data is loaded
   useEffect(() => {
-    if (!dataLoadedRef.current) return; // <-- only save if data has been loaded
+    if (!dataLoadedRef.current) return; // Only updates after initial load
 
     const db = getFirestore(app);
     const workflowRef = doc(db, 'workflows', workflowId);
@@ -58,35 +58,13 @@ const WorkflowBuilder = () => {
   };
 
   const handleSaveNode = (updatedNode) => {
-    const db = getFirestore(app);
-    const workflowRef = doc(db, 'workflows', workflowId);
-    const graphData = { nodes, edges };
-    graphData.nodes = graphData.nodes.map((node) => {
-      if (node.id === updatedNode.id) {
-        return updatedNode;
-      }
-      return node;
-    });
-    setDoc(workflowRef, { graph: graphData }, { merge: true });
-    setNodes(graphData.nodes);
+    setNodes((nds) =>
+      nds.map((node) =>
+        node.id === updatedNode.id ? updatedNode : node
+      )
+    );
+    setModalNode(null);
   };
-
-  useEffect(() => {
-    const db = getFirestore(app);
-    const workflowRef = doc(db, 'workflows', workflowId);
-
-    // Fetch the graph
-    const unsubscribe = onSnapshot(workflowRef, (docSnap) => {
-      const data = docSnap.data();
-      const graph = data?.graph;
-      if (graph) {
-        setNodes(graph.nodes || []);
-        setEdges(graph.edges || []);
-      }
-    });
-
-    return () => unsubscribe();
-  }, [workflowId]);
 
   const onAddNode = useCallback(() => {
     setNodes((nds) =>
@@ -113,14 +91,6 @@ const WorkflowBuilder = () => {
     (changes) => setEdges((eds) => applyEdgeChanges(changes, eds)),
     []
   );
-
-  // Save the graph whenever nodes or edges change
-  useEffect(() => {
-    const db = getFirestore(app);
-    const workflowRef = doc(db, 'workflows', workflowId);
-    const graphData = { nodes, edges };
-    setDoc(workflowRef, { graph: graphData }, { merge: true });
-  }, [nodes, edges, workflowId]);
 
   const onRun = async () => {
     try {
@@ -176,14 +146,15 @@ const WorkflowBuilder = () => {
           >
             <Background />
             <Controls />
-
           </ReactFlow>
         </ReactFlowProvider>
         {modalNode && (
-              <WorkflowBuilderModal node={modalNode}
-                                    onHide={() => setModalNode(null)}
-              onSave={handleSaveNode}/>
-            )}
+          <WorkflowBuilderModal
+            node={modalNode}
+            onHide={() => setModalNode(null)}
+            onSave={handleSaveNode}
+          />
+        )}
       </div>
     </div>
   );
