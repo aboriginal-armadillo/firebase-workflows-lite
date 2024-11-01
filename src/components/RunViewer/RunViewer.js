@@ -50,7 +50,8 @@ const RunViewer = () => {
       snapshot.forEach((doc) => {
         nodeData[doc.id] = {
           input: doc.data().input || {},
-          output: doc.data().output || {}
+          output: doc.data().output || {},
+          stdOut: doc.data().std_out || '',
         };
         statuses[doc.id] = doc.data().status;
       });

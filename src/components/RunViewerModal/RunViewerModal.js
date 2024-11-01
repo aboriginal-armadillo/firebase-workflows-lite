@@ -5,7 +5,7 @@ const RunViewerModal = ({ node, onHide }) => {
 
   const input = node.data.input;
   const output = node.data.output;
-  const stdOut = node.data.std_out;
+  const stdOut = node.data.stdOut;
 
   return (
     <Modal show={true} onHide={onHide}>
