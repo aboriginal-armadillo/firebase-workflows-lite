@@ -1,15 +1,17 @@
-// src/RunsList.js
 import React, { useEffect, useState } from 'react';
-import { getFirestore, doc, collection, onSnapshot } from 'firebase/firestore';
+import { getFirestore, doc, collection, onSnapshot, deleteDoc } from 'firebase/firestore';
 import app from '../../firebase';
 import { Link } from 'react-router-dom';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faTrash } from '@fortawesome/free-solid-svg-icons';
+import {Button} from "react-bootstrap";
 
-const RunsList = () => {
+const RunsList = ({ workflowId }) => {
   const [runs, setRuns] = useState([]);
 
   useEffect(() => {
     const db = getFirestore(app);
-    const workflowRef = doc(db, 'workflows', 'test_workflow');
+    const workflowRef = doc(db, 'workflows', workflowId);
     const runsCollection = collection(workflowRef, 'runs');
 
     const unsubscribe = onSnapshot(runsCollection, (snapshot) => {
@@ -21,15 +23,29 @@ const RunsList = () => {
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [workflowId]);
+
+  const deleteRun = async (runId) => {
+    try {
+      const db = getFirestore(app);
+      const runRef = doc(db, 'workflows', workflowId, 'runs', runId);
+      await deleteDoc(runRef);
+      alert(`Run ${runId} deleted.`);
+    } catch (error) {
+      console.error("Error removing document: ", error);
+    }
+  };
 
   return (
-    <div className="container">
+    <div className="container" style={{ marginTop: '20px' }}>
       <h1>Runs</h1>
       <ul>
         {runs.map((run) => (
-          <li key={run.id}>
-            <Link to={`/runs/${run.id}`}>Run {run.id}</Link>
+          <li key={run.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Link to={`/workflow/${workflowId}/runs/${run.id}`}>Run {run.id}</Link>
+            <Button onClick={() => deleteRun(run.id)} style={{ background: 'none', border: 'none', cursor: 'pointer' }}>
+              <FontAwesomeIcon icon={faTrash} style={{ color: 'red' }} />
+            </Button>
           </li>
         ))}
       </ul>

@@ -15,6 +15,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { v4 as uuidv4 } from 'uuid';
 import WorkflowBuilderModal from "../WorkflowBuilderModal/WorkflowBuilderModal";
+import RunsList from "../RunsList/RunsList";
 
 const WorkflowBuilder = () => {
   const { workflowId } = useParams();
@@ -157,6 +158,7 @@ const WorkflowBuilder = () => {
           />
         )}
       </div>
+      <RunsList workflowId={workflowId} />
     </div>
   );
 };
